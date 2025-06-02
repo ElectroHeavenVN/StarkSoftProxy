@@ -24,37 +24,31 @@
  */
 
 using System;
-using System.Text;
+using System.ComponentModel;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
-using System.Globalization;
-using System.IO;
+using System.Text;
 using System.Threading;
-using System.ComponentModel;
 
 namespace Starksoft.Net.Proxy
 {
     /// <summary>
-    /// Socks4 connection proxy class.  This class implements the Socks4 standard proxy protocol.
+    /// Socks4 connection proxy class. This class implements the Socks4 standard proxy protocol.
     /// </summary>
     /// <remarks>
     /// This class implements the Socks4 proxy protocol standard for TCP communciations.
     /// </remarks>
     public class Socks4ProxyClient : IProxyClient
     {
-        private const int WAIT_FOR_DATA_INTERVAL = 50;   // 50 ms
-        private const int WAIT_FOR_DATA_TIMEOUT = 15000; // 15 seconds
-        private const string PROXY_NAME = "SOCKS4";
-        private TcpClient _tcpClient;
-
-        private string _proxyHost;
-        private int _proxyPort;
-        private string _proxyUserId;
+        const int WAIT_FOR_DATA_INTERVAL = 50;   // 50 ms
+        const int WAIT_FOR_DATA_TIMEOUT = 15000; // 15 seconds
+        const string PROXY_NAME = "SOCKS4";
 
         /// <summary>
         /// Default Socks4 proxy port.
         /// </summary>
-        internal const int SOCKS_PROXY_DEFAULT_PORT = 1080;
+        internal const ushort SOCKS_PROXY_DEFAULT_PORT = 1080;
         /// <summary>
         /// Socks4 version number.
         /// </summary>
@@ -85,7 +79,34 @@ namespace Starksoft.Net.Proxy
         internal const byte SOCKS4_CMD_REPLY_REQUEST_REJECTED_DIFFERENT_IDENTD = 93;
 
         /// <summary>
-        /// Create a Socks4 proxy client object.  The default proxy port 1080 is used.
+        /// Gets String representing the name of the proxy. 
+        /// </summary>
+        /// <remarks>This property will always return the value 'SOCKS4'</remarks>
+        public virtual string ProxyName => PROXY_NAME;
+
+        /// <summary>
+        /// Gets or sets host name or IP address of the proxy server.
+        /// </summary>
+        public string ProxyHost { get; set; }
+
+        /// <summary>
+        /// Gets or sets port used to connect to proxy server.
+        /// </summary>
+        public ushort ProxyPort { get; set; }
+
+        /// <summary>
+        /// Gets or sets proxy user identification information.
+        /// </summary>
+        public string ProxyUserId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the TcpClient object. 
+        /// This property can be set prior to executing CreateConnection to use an existing TcpClient connection.
+        /// </summary>
+        public TcpClient Client { get; set; }
+
+        /// <summary>
+        /// Create a Socks4 proxy client object. The default proxy port 1080 is used.
         /// </summary>
         public Socks4ProxyClient() { }
 
@@ -93,30 +114,23 @@ namespace Starksoft.Net.Proxy
         /// Creates a Socks4 proxy client object using the supplied TcpClient object connection.
         /// </summary>
         /// <param name="tcpClient">A TcpClient connection object.</param>
-        public Socks4ProxyClient(TcpClient tcpClient)
-        {
-            if (tcpClient == null)
-                throw new ArgumentNullException("tcpClient");
-
-            _tcpClient = tcpClient;
-        }
+        public Socks4ProxyClient(TcpClient tcpClient) => Client = tcpClient ?? throw new ArgumentNullException(nameof(tcpClient));
 
         /// <summary>
-        /// Create a Socks4 proxy client object.  The default proxy port 1080 is used.
+        /// Create a Socks4 proxy client object. The default proxy port 1080 is used.
         /// </summary>
         /// <param name="proxyHost">Host name or IP address of the proxy server.</param>
         /// <param name="proxyUserId">Proxy user identification information.</param>
-        public Socks4ProxyClient(string proxyHost, string proxyUserId) 
+        public Socks4ProxyClient(string proxyHost, string proxyUserId)
         {
-            if (String.IsNullOrEmpty(proxyHost))
-                throw new ArgumentNullException("proxyHost");
-            
-            if (proxyUserId == null)
-                throw new ArgumentNullException("proxyUserId");
+            if (string.IsNullOrEmpty(proxyHost))
+                throw new ArgumentNullException(nameof(proxyHost));
+            if (proxyUserId is null)
+                throw new ArgumentNullException(nameof(proxyUserId));
 
-            _proxyHost = proxyHost;
-            _proxyPort = SOCKS_PROXY_DEFAULT_PORT;
-            _proxyUserId = proxyUserId;
+            ProxyHost = proxyHost;
+            ProxyPort = SOCKS_PROXY_DEFAULT_PORT;
+            ProxyUserId = proxyUserId;
         }
 
         /// <summary>
@@ -125,33 +139,29 @@ namespace Starksoft.Net.Proxy
         /// <param name="proxyHost">Host name or IP address of the proxy server.</param>
         /// <param name="proxyPort">Port used to connect to proxy server.</param>
         /// <param name="proxyUserId">Proxy user identification information.</param>
-        public Socks4ProxyClient(string proxyHost, int proxyPort, string proxyUserId)
+        public Socks4ProxyClient(string proxyHost, ushort proxyPort, string proxyUserId)
         {
-            if (String.IsNullOrEmpty(proxyHost))
-                throw new ArgumentNullException("proxyHost");
+            if (string.IsNullOrEmpty(proxyHost))
+                throw new ArgumentNullException(nameof(proxyHost));
+            if (proxyUserId is null)
+                throw new ArgumentNullException(nameof(proxyUserId));
 
-            if (proxyPort <= 0 || proxyPort > 65535)
-                throw new ArgumentOutOfRangeException("proxyPort", "port must be greater than zero and less than 65535");
-            
-            if (proxyUserId == null)
-                throw new ArgumentNullException("proxyUserId");
-            
-            _proxyHost = proxyHost;
-            _proxyPort = proxyPort;
-            _proxyUserId = proxyUserId;
+            ProxyHost = proxyHost;
+            ProxyPort = proxyPort;
+            ProxyUserId = proxyUserId;
         }
 
         /// <summary>
-        /// Create a Socks4 proxy client object.  The default proxy port 1080 is used.
+        /// Create a Socks4 proxy client object. The default proxy port 1080 is used.
         /// </summary>
         /// <param name="proxyHost">Host name or IP address of the proxy server.</param>
         public Socks4ProxyClient(string proxyHost)
         {
-            if (String.IsNullOrEmpty(proxyHost))
-                throw new ArgumentNullException("proxyHost");
-            
-            _proxyHost = proxyHost;
-            _proxyPort = SOCKS_PROXY_DEFAULT_PORT;
+            if (string.IsNullOrEmpty(proxyHost))
+                throw new ArgumentNullException(nameof(proxyHost));
+
+            ProxyHost = proxyHost;
+            ProxyPort = SOCKS_PROXY_DEFAULT_PORT;
         }
 
         /// <summary>
@@ -159,62 +169,13 @@ namespace Starksoft.Net.Proxy
         /// </summary>
         /// <param name="proxyHost">Host name or IP address of the proxy server.</param>
         /// <param name="proxyPort">Port used to connect to proxy server.</param>
-        public Socks4ProxyClient(string proxyHost, int proxyPort)
+        public Socks4ProxyClient(string proxyHost, ushort proxyPort)
         {
-            if (String.IsNullOrEmpty(proxyHost))
-                throw new ArgumentNullException("proxyHost");
+            if (string.IsNullOrEmpty(proxyHost))
+                throw new ArgumentNullException(nameof(proxyHost));
 
-            if (proxyPort <= 0 || proxyPort > 65535)
-                throw new ArgumentOutOfRangeException("proxyPort", "port must be greater than zero and less than 65535");
-
-            _proxyHost = proxyHost;
-            _proxyPort = proxyPort;
-        }
-
-        /// <summary>
-        /// Gets or sets host name or IP address of the proxy server.
-        /// </summary>
-        public string ProxyHost
-        {
-            get { return _proxyHost; }
-            set { _proxyHost = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets port used to connect to proxy server.
-        /// </summary>
-        public int ProxyPort
-        {
-            get { return _proxyPort; }
-            set { _proxyPort = value; }
-        }
-
-        /// <summary>
-        /// Gets String representing the name of the proxy. 
-        /// </summary>
-        /// <remarks>This property will always return the value 'SOCKS4'</remarks>
-        virtual public string ProxyName
-        {
-            get { return PROXY_NAME; }
-        }
-
-        /// <summary>
-        /// Gets or sets proxy user identification information.
-        /// </summary>
-        public string ProxyUserId
-        {
-            get { return _proxyUserId; }
-            set { _proxyUserId = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets the TcpClient object. 
-        /// This property can be set prior to executing CreateConnection to use an existing TcpClient connection.
-        /// </summary>
-        public TcpClient TcpClient
-        {
-            get { return _tcpClient; }
-            set { _tcpClient = value; }
+            ProxyHost = proxyHost;
+            ProxyPort = proxyPort;
         }
 
         /// <summary>
@@ -230,46 +191,34 @@ namespace Starksoft.Net.Proxy
         /// <remarks>
         /// This method creates a connection to the proxy server and instructs the proxy server
         /// to make a pass through connection to the specified destination host on the specified
-        /// port.  
+        /// port. 
         /// </remarks>
-        public TcpClient CreateConnection(string destinationHost, int destinationPort)
+        public TcpClient CreateConnection(string destinationHost, ushort destinationPort)
         {
-            if (String.IsNullOrEmpty(destinationHost))
-                throw new ArgumentNullException("destinationHost");
-
-            if (destinationPort <= 0 || destinationPort > 65535)
-                throw new ArgumentOutOfRangeException("destinationPort", "port must be greater than zero and less than 65535");
-
+            if (string.IsNullOrEmpty(destinationHost))
+                throw new ArgumentNullException(nameof(destinationHost));
             try
             {
                 // if we have no connection, create one
-                if (_tcpClient == null)
+                if (Client == null)
                 {
-                    if (String.IsNullOrEmpty(_proxyHost))
+                    if (string.IsNullOrEmpty(ProxyHost))
                         throw new ProxyException("ProxyHost property must contain a value.");
-
-                    if (_proxyPort <= 0 || _proxyPort > 65535)
-                        throw new ProxyException("ProxyPort value must be greater than zero and less than 65535");
-
                     //  create new tcp client object to the proxy server
-                    _tcpClient = new TcpClient();
-
+                    Client = new TcpClient();
                     // attempt to open the connection
-                    _tcpClient.Connect(_proxyHost, _proxyPort);
+                    Client.Connect(ProxyHost, ProxyPort);
                 }
-
-                //  send connection command to proxy host for the specified destination host and port
-                SendCommand(_tcpClient.GetStream(), SOCKS4_CMD_CONNECT, destinationHost, destinationPort, _proxyUserId);
-
+                // send connection command to proxy host for the specified destination host and port
+                SendCommand(Client.GetStream(), SOCKS4_CMD_CONNECT, destinationHost, destinationPort, ProxyUserId);
                 // return the open proxied tcp client object to the caller for normal use
-                return _tcpClient;
+                return Client;
             }
             catch (Exception ex)
             {
-                throw new ProxyException(String.Format(CultureInfo.InvariantCulture, "Connection to proxy host {0} on port {1} failed.", Utils.GetHost(_tcpClient), Utils.GetPort(_tcpClient)), ex);
+                throw new ProxyException(string.Format(CultureInfo.InvariantCulture, "Connection to proxy host {0} on port {1} failed.", Utils.GetHost(Client), Utils.GetPort(Client)), ex);
             }
         }
-
 
         /// <summary>
         /// Sends a command to the proxy server.
@@ -279,7 +228,7 @@ namespace Starksoft.Net.Proxy
         /// <param name="destinationHost">Destination host name or IP address.</param>
         /// <param name="destinationPort">Destination port number</param>
         /// <param name="userId">IDENTD user ID value.</param>
-        internal virtual void SendCommand(NetworkStream proxy, byte command, string destinationHost, int destinationPort, string userId)
+        internal virtual void SendCommand(NetworkStream proxy, byte command, string destinationHost, ushort destinationPort, string userId)
         {
             // PROXY SERVER REQUEST
             // The client connects to the SOCKS server and sends a CONNECT request when
@@ -287,26 +236,25 @@ namespace Starksoft.Net.Proxy
             // includes in the request packet the IP address and the port number of the
             // destination host, and userid, in the following format.
             //
-            //        +----+----+----+----+----+----+----+----+----+----+....+----+
-            //        | VN | CD | DSTPORT |      DSTIP        | USERID       |NULL|
-            //        +----+----+----+----+----+----+----+----+----+----+....+----+
-            // # of bytes:	   1    1      2              4           variable       1
+            //               +----+----+----+----+----+----+----+----+----+----+....+----+
+            //               | VN | CD | DSTPORT |      DSTIP        | USERID       |NULL|
+            //               +----+----+----+----+----+----+----+----+----+----+....+----+
+            // # of bytes:	   1    1       2              4          variable        1
             //
             // VN is the SOCKS protocol version number and should be 4. CD is the
             // SOCKS command code and should be 1 for CONNECT request. NULL is a byte
-            // of all zero bits.         
+            // of all zero bits.        
 
             //  userId needs to be a zero length string so that the GetBytes method
             //  works properly
-            if (userId == null)
+            if (userId is null)
                 userId = "";
-
             byte[] destIp = GetIPAddressBytes(destinationHost);
             byte[] destPort = GetDestinationPortBytes(destinationPort);
-            byte[] userIdBytes = ASCIIEncoding.ASCII.GetBytes(userId);   
+            byte[] userIdBytes = Encoding.ASCII.GetBytes(userId);
             byte[] request = new byte[9 + userIdBytes.Length];
 
-            //  set the bits on the request byte array
+            // set the bits on the request byte array
             request[0] = SOCKS4_VERSION_NUMBER;
             request[1] = command;
             destPort.CopyTo(request, 2);
@@ -316,7 +264,6 @@ namespace Starksoft.Net.Proxy
 
             // send the connect request
             proxy.Write(request, 0, request.Length);
-
             // wait for the proxy server to respond
             WaitForData(proxy);
 
@@ -324,14 +271,14 @@ namespace Starksoft.Net.Proxy
             // The SOCKS server checks to see whether such a request should be granted
             // based on any combination of source IP address, destination IP address,
             // destination port number, the userid, and information it may obtain by
-            // consulting IDENT, cf. RFC 1413.  If the request is granted, the SOCKS
+            // consulting IDENT, cf. RFC 1413. If the request is granted, the SOCKS
             // server makes a connection to the specified port of the destination host.
             // A reply packet is sent to the client when this connection is established,
             // or when the request is rejected or the operation fails. 
             //
-            //        +----+----+----+----+----+----+----+----+
-            //        | VN | CD | DSTPORT |      DSTIP        |
-            //        +----+----+----+----+----+----+----+----+
+            //              +----+----+----+----+----+----+----+----+
+            //              | VN | CD | DSTPORT |      DSTIP        |
+            //              +----+----+----+----+----+----+----+----+
             // # of bytes:	   1    1      2              4
             //
             // VN is the version of the reply code and should be 0. CD is the result
@@ -354,10 +301,8 @@ namespace Starksoft.Net.Proxy
 
             // create an 8 byte response array  
             byte[] response = new byte[8];
-            
             // read the resonse from the network stream
             proxy.Read(response, 0, 8);
-
             //  evaluate the reply code for an error condition
             if (response[1] != SOCKS4_CMD_REPLY_REQUEST_GRANTED)
                 HandleProxyCommandError(response, destinationHost, destinationPort);
@@ -370,10 +315,8 @@ namespace Starksoft.Net.Proxy
         /// <returns>Byte array representing IP address in bytes.</returns>
         internal byte[] GetIPAddressBytes(string destinationHost)
         {
-            IPAddress ipAddr = null;
-
-            //  if the address doesn't parse then try to resolve with dns
-            if (!IPAddress.TryParse(destinationHost, out ipAddr))
+            // if the address doesn't parse then try to resolve with dns
+            if (!IPAddress.TryParse(destinationHost, out IPAddress ipAddr))
             {
                 try
                 {
@@ -381,12 +324,11 @@ namespace Starksoft.Net.Proxy
                 }
                 catch (Exception ex)
                 {
-                    throw new ProxyException(String.Format(CultureInfo.InvariantCulture, "A error occurred while attempting to DNS resolve the host name {0}.", destinationHost), ex);
+                    throw new ProxyException(string.Format(CultureInfo.InvariantCulture, "A error occurred while attempting to DNS resolve the host name {0}.", destinationHost), ex);
                 }
             }
-           
             // return address bytes
-            return ipAddr.GetAddressBytes();            
+            return ipAddr.GetAddressBytes();
         }
 
         /// <summary>
@@ -394,13 +336,7 @@ namespace Starksoft.Net.Proxy
         /// </summary>
         /// <param name="value">Destination port.</param>
         /// <returns>Byte array representing an 16 bit port number as two bytes.</returns>
-        internal byte[] GetDestinationPortBytes(int value)
-        {
-            byte[] array = new byte[2];
-            array[0] = Convert.ToByte(value / 256);
-            array[1] = Convert.ToByte(value % 256);
-            return array;
-        }
+        internal byte[] GetDestinationPortBytes(ushort value) => new byte[] { (byte)(value / 256), (byte)(value % 256) };
 
         /// <summary>
         /// Receive a byte array from the proxy server and determine and handle and errors that may have occurred.
@@ -408,29 +344,21 @@ namespace Starksoft.Net.Proxy
         /// <param name="response">Proxy server command response as a byte array.</param>
         /// <param name="destinationHost">Destination host.</param>
         /// <param name="destinationPort">Destination port number.</param>
-        internal void HandleProxyCommandError(byte[] response, string destinationHost, int destinationPort)
+        internal void HandleProxyCommandError(byte[] response, string destinationHost, ushort destinationPort)
         {
-
             if (response == null)
-                throw new ArgumentNullException("response"); 
-
+                throw new ArgumentNullException("response");
             //  extract the reply code
             byte replyCode = response[1];
-           
             //  extract the ip v4 address (4 bytes)
             byte[] ipBytes = new byte[4];
             for (int i = 0; i < 4; i++)
                 ipBytes[i] = response[i + 4];
-            
             //  convert the ip address to an IPAddress object
             IPAddress ipAddr = new IPAddress(ipBytes);
-
             //  extract the port number big endian (2 bytes)
-            byte[] portBytes = new byte[2];
-            portBytes[0] = response[3];
-            portBytes[1] = response[2];
-            Int16 port = BitConverter.ToInt16(portBytes, 0);
-
+            byte[] portBytes = new byte[] { response[3], response[2] };
+            ushort port = BitConverter.ToUInt16(portBytes, 0);
             // translate the reply code error number to human readable text
             string proxyErrorText;
             switch (replyCode)
@@ -441,18 +369,16 @@ namespace Starksoft.Net.Proxy
                 case SOCKS4_CMD_REPLY_REQUEST_REJECTED_CANNOT_CONNECT_TO_IDENTD:
                     proxyErrorText = "connection request was rejected because SOCKS destination cannot connect to identd on the client";
                     break;
-                case SOCKS4_CMD_REPLY_REQUEST_REJECTED_DIFFERENT_IDENTD: 
+                case SOCKS4_CMD_REPLY_REQUEST_REJECTED_DIFFERENT_IDENTD:
                     proxyErrorText = "connection request rejected because the client program and identd report different user-ids";
                     break;
                 default:
-                    proxyErrorText = String.Format(CultureInfo.InvariantCulture, "proxy client received an unknown reply with the code value '{0}' from the proxy destination", replyCode.ToString(CultureInfo.InvariantCulture));
+                    proxyErrorText = string.Format(CultureInfo.InvariantCulture, "proxy client received an unknown reply with the code value '{0}' from the proxy destination", replyCode.ToString(CultureInfo.InvariantCulture));
                     break;
             }
-
-            //  build the exeception message string
-            string exceptionMsg = String.Format(CultureInfo.InvariantCulture, "The {0} concerning destination host {1} port number {2}.  The destination reported the host as {3} port {4}.", proxyErrorText, destinationHost, destinationPort, ipAddr.ToString(), port.ToString(CultureInfo.InvariantCulture));
-
-            //  throw a new application exception 
+            // build the exeception message string
+            string exceptionMsg = string.Format(CultureInfo.InvariantCulture, "The {0} concerning destination host {1} port number {2}. The destination reported the host as {3} port {4}.", proxyErrorText, destinationHost, destinationPort, ipAddr.ToString(), port.ToString(CultureInfo.InvariantCulture));
+            // throw a new application exception 
             throw new ProxyException(exceptionMsg);
         }
 
@@ -468,11 +394,10 @@ namespace Starksoft.Net.Proxy
             }
         }
 
+        #region "Async Methods"
 
-#region "Async Methods"
-
-        private BackgroundWorker _asyncWorker;
-        private Exception _asyncException;
+        BackgroundWorker _asyncWorker;
+        Exception _asyncException;
         bool _asyncCancelled;
 
         /// <summary>
@@ -480,37 +405,29 @@ namespace Starksoft.Net.Proxy
         /// </summary>
         /// <remarks>Returns true if an asynchronous operation is running; otherwise, false.
         /// </remarks>
-        public bool IsBusy
-        {
-            get { return _asyncWorker == null ? false : _asyncWorker.IsBusy; }
-        }
+        public bool IsBusy => _asyncWorker != null && _asyncWorker.IsBusy;
 
         /// <summary>
         /// Gets a value indicating whether an asynchronous operation is cancelled.
         /// </summary>
         /// <remarks>Returns true if an asynchronous operation is cancelled; otherwise, false.
         /// </remarks>
-        public bool IsAsyncCancelled
-        {
-            get { return _asyncCancelled; }
-        }
+        public bool IsAsyncCancelled => _asyncCancelled;
 
         /// <summary>
         /// Cancels any asychronous operation that is currently active.
         /// </summary>
         public void CancelAsync()
         {
-            if (_asyncWorker != null && !_asyncWorker.CancellationPending && _asyncWorker.IsBusy)
-            {
-                _asyncCancelled = true;
-                _asyncWorker.CancelAsync();
-            }
+            if (_asyncWorker == null || _asyncWorker.CancellationPending || !_asyncWorker.IsBusy)
+                return;
+            _asyncCancelled = true;
+            _asyncWorker.CancelAsync();
         }
 
-        private void CreateAsyncWorker()
+        void CreateAsyncWorker()
         {
-            if (_asyncWorker != null)
-                _asyncWorker.Dispose();
+            _asyncWorker?.Dispose();
             _asyncException = null;
             _asyncWorker = null;
             _asyncCancelled = false;
@@ -530,33 +447,30 @@ namespace Starksoft.Net.Proxy
         /// <param name="destinationPort">Port number to connect to on the destination host.</param>
         /// <returns>
         /// Returns TcpClient object that can be used normally to communicate
-        /// with the destination server.  
+        /// with the destination server. 
         /// </returns>
         /// <remarks>
         /// This instructs the proxy server to make a pass through connection to the specified destination host on the specified
-        /// port.  
+        /// port. 
         /// </remarks>
-        public void CreateConnectionAsync(string destinationHost, int destinationPort)
+        public void CreateConnectionAsync(string destinationHost, ushort destinationPort)
         {
             if (_asyncWorker != null && _asyncWorker.IsBusy)
-                throw new InvalidOperationException("The Socks4/4a object is already busy executing another asynchronous operation.  You can only execute one asychronous method at a time.");
+                throw new InvalidOperationException("The Socks4/4a object is already busy executing another asynchronous operation. You can only execute one asychronous method at a time.");
 
             CreateAsyncWorker();
             _asyncWorker.WorkerSupportsCancellation = true;
             _asyncWorker.DoWork += new DoWorkEventHandler(CreateConnectionAsync_DoWork);
             _asyncWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(CreateConnectionAsync_RunWorkerCompleted);
-            Object[] args = new Object[2];
-            args[0] = destinationHost;
-            args[1] = destinationPort;
-            _asyncWorker.RunWorkerAsync(args);
+            _asyncWorker.RunWorkerAsync(new object[] { destinationHost, destinationPort });
         }
 
-        private void CreateConnectionAsync_DoWork(object sender, DoWorkEventArgs e)
+        void CreateConnectionAsync_DoWork(object sender, DoWorkEventArgs e)
         {
             try
             {
-                Object[] args = (Object[])e.Argument;
-                e.Result = CreateConnection((string)args[0], (int)args[1]);
+                object[] args = (object[])e.Argument;
+                e.Result = CreateConnection((string)args[0], (ushort)args[1]);
             }
             catch (Exception ex)
             {
@@ -564,14 +478,9 @@ namespace Starksoft.Net.Proxy
             }
         }
 
-        private void CreateConnectionAsync_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            if (CreateConnectionAsyncCompleted != null)
-                CreateConnectionAsyncCompleted(this, new CreateConnectionAsyncCompletedEventArgs(_asyncException, _asyncCancelled, (TcpClient)e.Result));
-        }
-        
-#endregion
+        void CreateConnectionAsync_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e) => CreateConnectionAsyncCompleted?.Invoke(this, new CreateConnectionAsyncCompletedEventArgs(_asyncException, _asyncCancelled, (TcpClient)e.Result));
 
+        #endregion
     }
 
 }

@@ -33,11 +33,11 @@ using System.ComponentModel;
 namespace Starksoft.Net.Proxy
 {
     /// <summary>
-    /// HTTP connection proxy class.  This class implements the HTTP standard proxy protocol.
+    /// HTTP connection proxy class. This class implements the HTTP standard proxy protocol.
     /// <para>
-    /// You can use this class to set up a connection to an HTTP proxy server.  Calling the 
+    /// You can use this class to set up a connection to an HTTP proxy server. Calling the 
     /// CreateConnection() method initiates the proxy connection and returns a standard
-    /// System.Net.Socks.TcpClient object that can be used as normal.  The proxy plumbing
+    /// System.Net.Socks.TcpClient object that can be used as normal. The proxy plumbing
     /// is all handled for you.
     /// </para>
     /// <code>
@@ -46,19 +46,16 @@ namespace Starksoft.Net.Proxy
     /// </summary>
     public class HttpProxyClient : IProxyClient
     {
-        private string _proxyHost;
-        private int _proxyPort;
-        private HttpResponseCodes _respCode;
-        private string _respText;
-        private TcpClient _tcpClient;
+        HttpResponseCodes _respCode;
+        string _respText;
 
-        private const int HTTP_PROXY_DEFAULT_PORT = 8080;
-        private const string HTTP_PROXY_CONNECT_CMD = "CONNECT {0}:{1} HTTP/1.0\r\nHost: {0}:{1}\r\n\r\n";
-        private const int WAIT_FOR_DATA_INTERVAL = 50; // 50 ms
-        private const int WAIT_FOR_DATA_TIMEOUT = 15000; // 15 seconds
-        private const string PROXY_NAME = "HTTP";
+        const ushort HTTP_PROXY_DEFAULT_PORT = 8080;
+        const string HTTP_PROXY_CONNECT_CMD = "CONNECT {0}:{1} HTTP/1.1\r\nHost: {0}:{1}\r\n";
+        const int WAIT_FOR_DATA_INTERVAL = 50; // 50 ms
+        const int WAIT_FOR_DATA_TIMEOUT = 15000; // 15 seconds
+        const string PROXY_NAME = "HTTP";
 
-        private enum HttpResponseCodes
+        enum HttpResponseCodes
         {
             None = 0,
             Continue = 100,
@@ -103,6 +100,38 @@ namespace Starksoft.Net.Proxy
         }
 
         /// <summary>
+        /// Gets String representing the name of the proxy. 
+        /// </summary>
+        /// <remarks>This property will always return the value 'HTTP'</remarks>
+        public string ProxyName => PROXY_NAME;
+
+        /// <summary>
+        /// Gets or sets host name or IP address of the proxy server.
+        /// </summary>
+        public string ProxyHost { get; set; }
+
+        /// <summary>
+        /// Gets or sets port number for the proxy server.
+        /// </summary>
+        public ushort ProxyPort { get; set; }
+
+        /// <summary>
+        /// Gets or sets proxy authentication user name.
+        /// </summary>
+        public string ProxyUserName { get; set; }
+
+        /// <summary>
+        /// Gets or sets proxy authentication password.
+        /// </summary>
+        public string ProxyPassword { get; set; }
+
+        /// <summary>
+        /// Gets or sets the TcpClient object. 
+        /// This property can be set prior to executing CreateConnection to use an existing TcpClient connection.
+        /// </summary>
+        public TcpClient Client { get; set; }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         public HttpProxyClient() { }
@@ -111,82 +140,69 @@ namespace Starksoft.Net.Proxy
         /// Creates a HTTP proxy client object using the supplied TcpClient object connection.
         /// </summary>
         /// <param name="tcpClient">A TcpClient connection object.</param>
-        public HttpProxyClient(TcpClient tcpClient)
-        {
-            if (tcpClient == null)
-                throw new ArgumentNullException("tcpClient");
-
-            _tcpClient = tcpClient;
-        }
-
+        public HttpProxyClient(TcpClient tcpClient) => Client = tcpClient ?? throw new ArgumentNullException(nameof(tcpClient));
 
         /// <summary>
-        /// Constructor.  The default HTTP proxy port 8080 is used.
+        /// Constructor. The default HTTP proxy port 8080 is used.
         /// </summary>
         /// <param name="proxyHost">Host name or IP address of the proxy.</param>
         public HttpProxyClient(string proxyHost)
         {
-            if (String.IsNullOrEmpty(proxyHost))
-                throw new ArgumentNullException("proxyHost");
+            if (string.IsNullOrEmpty(proxyHost))
+                throw new ArgumentNullException(nameof(proxyHost));
 
-            _proxyHost = proxyHost;
-            _proxyPort = HTTP_PROXY_DEFAULT_PORT;
+            ProxyHost = proxyHost;
+            ProxyPort = HTTP_PROXY_DEFAULT_PORT;
         }
 
         /// <summary>
-        /// Constructor.  
+        /// Constructor. The default HTTP proxy port 8080 is used.
+        /// </summary>
+        /// <param name="proxyHost">Host name or IP address of the proxy.</param>
+        /// <param name="proxyUsername">Username for the proxy server.</param>
+        /// <param name="proxyPassword">Password for the proxy server.</param>
+        public HttpProxyClient(string proxyHost, string proxyUsername, string proxyPassword)
+        {
+            if (string.IsNullOrEmpty(proxyHost))
+                throw new ArgumentNullException(nameof(proxyHost));
+
+            ProxyHost = proxyHost;
+            ProxyPort = HTTP_PROXY_DEFAULT_PORT;
+            ProxyUserName = proxyUsername;
+            ProxyPassword = proxyPassword;
+        }
+
+        /// <summary>
+        /// Constructor. 
         /// </summary>
         /// <param name="proxyHost">Host name or IP address of the proxy server.</param>
         /// <param name="proxyPort">Port number for the proxy server.</param>
-        public HttpProxyClient(string proxyHost, int proxyPort)
+        public HttpProxyClient(string proxyHost, ushort proxyPort)
         {
-            if (String.IsNullOrEmpty(proxyHost))
-                throw new ArgumentNullException("proxyHost");
+            if (string.IsNullOrEmpty(proxyHost))
+                throw new ArgumentNullException(nameof(proxyHost));
 
-            if (proxyPort <= 0 || proxyPort > 65535)
-                throw new ArgumentOutOfRangeException("proxyPort", "port must be greater than zero and less than 65535");
-
-            _proxyHost = proxyHost;
-            _proxyPort = proxyPort;
+            ProxyHost = proxyHost;
+            ProxyPort = proxyPort;
         }
 
         /// <summary>
-        /// Gets or sets host name or IP address of the proxy server.
+        /// Constructor. 
         /// </summary>
-        public string ProxyHost
+        /// <param name="proxyHost">Host name or IP address of the proxy server.</param>
+        /// <param name="proxyPort">Port number for the proxy server.</param>
+        /// <param name="proxyUsername">Username for the proxy server.</param>
+        /// <param name="proxyPassword">Password for the proxy server.</param>
+        public HttpProxyClient(string proxyHost, ushort proxyPort, string proxyUsername, string proxyPassword)
         {
-            get { return _proxyHost; }
-            set { _proxyHost = value; }
-        }
+            if (string.IsNullOrEmpty(proxyHost))
+                throw new ArgumentNullException(nameof(proxyHost));
 
-        /// <summary>
-        /// Gets or sets port number for the proxy server.
-        /// </summary>
-        public int ProxyPort
-        {
-            get { return _proxyPort; }
-            set { _proxyPort = value; }
+            ProxyHost = proxyHost;
+            ProxyPort = proxyPort;
+            ProxyUserName = proxyUsername;
+            ProxyPassword = proxyPassword;
         }
-
-        /// <summary>
-        /// Gets String representing the name of the proxy. 
-        /// </summary>
-        /// <remarks>This property will always return the value 'HTTP'</remarks>
-        public string ProxyName
-        {
-            get { return PROXY_NAME; }
-        }
-
-        /// <summary>
-        /// Gets or sets the TcpClient object. 
-        /// This property can be set prior to executing CreateConnection to use an existing TcpClient connection.
-        /// </summary>
-        public TcpClient TcpClient
-        {
-            get { return _tcpClient; }
-            set { _tcpClient = value; }
-        }
-
 
         /// <summary>
         /// Creates a remote TCP connection through a proxy server to the destination host on the destination port.
@@ -200,113 +216,105 @@ namespace Starksoft.Net.Proxy
         /// <remarks>
         /// This method creates a connection to the proxy server and instructs the proxy server
         /// to make a pass through connection to the specified destination host on the specified
-        /// port.  
+        /// port.
         /// </remarks>
-        public TcpClient CreateConnection(string destinationHost, int destinationPort)
+        public TcpClient CreateConnection(string destinationHost, ushort destinationPort)
         {
             try
             {
                 // if we have no connection, create one
-                if (_tcpClient == null)
+                if (Client == null)
                 {
-                    if (String.IsNullOrEmpty(_proxyHost))
+                    if (string.IsNullOrEmpty(ProxyHost))
                         throw new ProxyException("ProxyHost property must contain a value.");
-
-                    if (_proxyPort <= 0 || _proxyPort > 65535)
-                        throw new ProxyException("ProxyPort value must be greater than zero and less than 65535");
-
-                    //  create new tcp client object to the proxy server
-                    _tcpClient = new TcpClient();
-
+                    // create new tcp client object to the proxy server
+                    Client = new TcpClient();
                     // attempt to open the connection
-                    _tcpClient.Connect(_proxyHost, _proxyPort);
+                    Client.Connect(ProxyHost, ProxyPort);
                 }
-
-                //  send connection command to proxy host for the specified destination host and port
+                // send connection command to proxy host for the specified destination host and port
                 SendConnectionCommand(destinationHost, destinationPort);
-
                 // return the open proxied tcp client object to the caller for normal use
-                return _tcpClient;
+                return Client;
             }
             catch (SocketException ex)
             {
-                throw new ProxyException(String.Format(CultureInfo.InvariantCulture, "Connection to proxy host {0} on port {1} failed.", Utils.GetHost(_tcpClient), Utils.GetPort(_tcpClient)), ex);
+                throw new ProxyException(string.Format(CultureInfo.InvariantCulture, "Connection to proxy host {0} on port {1} failed.", Utils.GetHost(Client), Utils.GetPort(Client)), ex);
             }
         }
 
-
-        private void SendConnectionCommand(string host, int port)
+        void SendConnectionCommand(string host, ushort port)
         {
-            NetworkStream stream = _tcpClient.GetStream(); 
+            NetworkStream stream = Client.GetStream();
 
             // PROXY SERVER REQUEST
             // =======================================================================
             //CONNECT starksoft.com:443 HTTP/1.0 <CR><LF>
             //HOST starksoft.com:443<CR><LF>
-            //[... other HTTP header lines ending with <CR><LF> if required]>
+            //[Proxy-Authorization: Basic base64encodedstring<CR><LF> if required]
+            //[... other HTTP header lines ending with <CR><LF> if required]
             //<CR><LF>    // Last Empty Line
-
-            string connectCmd = String.Format(CultureInfo.InvariantCulture, HTTP_PROXY_CONNECT_CMD, host, port.ToString(CultureInfo.InvariantCulture));
-            byte[] request = ASCIIEncoding.ASCII.GetBytes(connectCmd);
+            string cmd = HTTP_PROXY_CONNECT_CMD;
+            if (!string.IsNullOrEmpty(ProxyUserName) && !string.IsNullOrEmpty(ProxyPassword))
+            {
+                string auth = string.Format(CultureInfo.InvariantCulture, "{0}:{1}", ProxyUserName, ProxyPassword);
+                string enc = Convert.ToBase64String(Encoding.UTF8.GetBytes(auth));
+                cmd += string.Format(CultureInfo.InvariantCulture, "Proxy-Authorization: Basic {0}\r\n", enc);
+            }
+            string connectCmd = string.Format(CultureInfo.InvariantCulture, cmd + "\r\n", host, port.ToString(CultureInfo.InvariantCulture));
+            byte[] request = Encoding.UTF8.GetBytes(connectCmd);
 
             // send the connect request
             stream.Write(request, 0, request.Length);
-
             // wait for the proxy server to respond
             WaitForData(stream);
 
             // PROXY SERVER RESPONSE
             // =======================================================================
             //HTTP/1.0 200 Connection Established<CR><LF>
-            //[.... other HTTP header lines ending with <CR><LF>..
-            //ignore all of them]
+            //[.... other HTTP header lines ending with <CR><LF>.. ignore all of them]
             //<CR><LF>    // Last Empty Line
 
             // create an byte response array  
-            byte[] response = new byte[_tcpClient.ReceiveBufferSize];
+            byte[] response = new byte[Client.ReceiveBufferSize];
             StringBuilder sbuilder = new StringBuilder();
             int bytes = 0;
             long total = 0;
 
             do
             {
-                bytes = stream.Read(response, 0, _tcpClient.ReceiveBufferSize);
+                bytes = stream.Read(response, 0, Client.ReceiveBufferSize);
                 total += bytes;
-                sbuilder.Append(System.Text.ASCIIEncoding.UTF8.GetString(response, 0, bytes));
+                sbuilder.Append(Encoding.UTF8.GetString(response, 0, bytes));
             } while (stream.DataAvailable);
 
             ParseResponse(sbuilder.ToString());
-            
             //  evaluate the reply code for an error condition
             if (_respCode != HttpResponseCodes.OK)
                 HandleProxyCommandError(host, port);
         }
-        
-        private void HandleProxyCommandError(string host, int port)
+
+        void HandleProxyCommandError(string host, ushort port)
         {
             string msg;
-
             switch (_respCode)
             {
                 case HttpResponseCodes.None:
-                    msg = String.Format(CultureInfo.InvariantCulture, "Proxy destination {0} on port {1} failed to return a recognized HTTP response code.  Server response: {2}", Utils.GetHost(_tcpClient), Utils.GetPort(_tcpClient), _respText);
-                    break;                   
-
+                    msg = string.Format(CultureInfo.InvariantCulture, "Proxy destination {0} on port {1} failed to return a recognized HTTP response code. Server response: {2}", Utils.GetHost(Client), Utils.GetPort(Client), _respText);
+                    break;
                 case HttpResponseCodes.BadGateway:
                     //HTTP/1.1 502 Proxy Error (The specified Secure Sockets Layer (SSL) port is not allowed. ISA Server is not configured to allow SSL requests from this port. Most Web browsers use port 443 for SSL requests.)
-                    msg = String.Format(CultureInfo.InvariantCulture, "Proxy destination {0} on port {1} responded with a 502 code - Bad Gateway.  If you are connecting to a Microsoft ISA destination please refer to knowledge based article Q283284 for more information.  Server response: {2}", Utils.GetHost(_tcpClient), Utils.GetPort(_tcpClient), _respText);
+                    msg = string.Format(CultureInfo.InvariantCulture, "Proxy destination {0} on port {1} responded with a 502 code - Bad Gateway. If you are connecting to a Microsoft ISA destination please refer to knowledge based article Q283284 for more information. Server response: {2}", Utils.GetHost(Client), Utils.GetPort(Client), _respText);
                     break;
-
                 default:
-                    msg = String.Format(CultureInfo.InvariantCulture, "Proxy destination {0} on port {1} responded with a {2} code - {3}", Utils.GetHost(_tcpClient), Utils.GetPort(_tcpClient), ((int)_respCode).ToString(CultureInfo.InvariantCulture), _respText);
+                    msg = string.Format(CultureInfo.InvariantCulture, "Proxy destination {0} on port {1} responded with a {2} code - {3}", Utils.GetHost(Client), Utils.GetPort(Client), ((int)_respCode).ToString(CultureInfo.InvariantCulture), _respText);
                     break;
             }
-
-            //  throw a new application exception 
+            // throw a new application exception 
             throw new ProxyException(msg);
         }
 
-        private void WaitForData(NetworkStream stream)
+        void WaitForData(NetworkStream stream)
         {
             int sleepTime = 0;
             while (!stream.DataAvailable)
@@ -314,48 +322,35 @@ namespace Starksoft.Net.Proxy
                 Thread.Sleep(WAIT_FOR_DATA_INTERVAL);
                 sleepTime += WAIT_FOR_DATA_INTERVAL;
                 if (sleepTime > WAIT_FOR_DATA_TIMEOUT)
-                    throw new ProxyException(String.Format("A timeout while waiting for the proxy server at {0} on port {1} to respond.", Utils.GetHost(_tcpClient), Utils.GetPort(_tcpClient) ));
+                    throw new ProxyException(string.Format("A timeout while waiting for the proxy server at {0} on port {1} to respond.", Utils.GetHost(Client), Utils.GetPort(Client)));
             }
         }
 
-        private void ParseResponse(string response)
+        void ParseResponse(string response)
         {
             string[] data = null;
-
             //  get rid of the LF character if it exists and then split the string on all CR
             data = response.Replace('\n', ' ').Split('\r');
-            
             ParseCodeAndText(data[0]);
         }
 
-        private void ParseCodeAndText(string line)
+        void ParseCodeAndText(string line)
         {
-            int begin = 0;
-            int end = 0;
-            string val = null;
-
             if (line.IndexOf("HTTP") == -1)
-                throw new ProxyException(String.Format("No HTTP response received from proxy destination.  Server response: {0}.", line));
-
-            begin = line.IndexOf(" ") + 1;
-            end = line.IndexOf(" ", begin);
-
-            val = line.Substring(begin, end - begin);
-            Int32 code = 0;
-
-            if (!Int32.TryParse(val, out code))
-                throw new ProxyException(String.Format("An invalid response code was received from proxy destination.  Server response: {0}.", line));
-
+                throw new ProxyException(string.Format("No HTTP response received from proxy destination. Server response: {0}.", line));
+            int begin = line.IndexOf(" ") + 1;
+            int end = line.IndexOf(" ", begin);
+            string val = line.Substring(begin, end - begin);
+            if (!int.TryParse(val, out int code))
+                throw new ProxyException(string.Format("An invalid response code was received from proxy destination. Server response: {0}.", line));
             _respCode = (HttpResponseCodes)code;
             _respText = line.Substring(end + 1).Trim();
         }
 
+        #region "Async Methods"
 
-
-#region "Async Methods"
-
-        private BackgroundWorker _asyncWorker;
-        private Exception _asyncException;
+        BackgroundWorker _asyncWorker;
+        Exception _asyncException;
         bool _asyncCancelled;
 
         /// <summary>
@@ -363,37 +358,29 @@ namespace Starksoft.Net.Proxy
         /// </summary>
         /// <remarks>Returns true if an asynchronous operation is running; otherwise, false.
         /// </remarks>
-        public bool IsBusy
-        {
-            get { return _asyncWorker == null ? false : _asyncWorker.IsBusy; }
-        }
+        public bool IsBusy => _asyncWorker != null && _asyncWorker.IsBusy;
 
         /// <summary>
         /// Gets a value indicating whether an asynchronous operation is cancelled.
         /// </summary>
         /// <remarks>Returns true if an asynchronous operation is cancelled; otherwise, false.
         /// </remarks>
-        public bool IsAsyncCancelled
-        {
-            get { return _asyncCancelled; }
-        }
+        public bool IsAsyncCancelled => _asyncCancelled;
 
         /// <summary>
         /// Cancels any asychronous operation that is currently active.
         /// </summary>
         public void CancelAsync()
         {
-            if (_asyncWorker != null && !_asyncWorker.CancellationPending && _asyncWorker.IsBusy)
-            {
-                _asyncCancelled = true;
-                _asyncWorker.CancelAsync();
-            }
+            if (_asyncWorker == null || _asyncWorker.CancellationPending || !_asyncWorker.IsBusy)
+                return;
+            _asyncCancelled = true;
+            _asyncWorker.CancelAsync();
         }
 
-        private void CreateAsyncWorker()
+        void CreateAsyncWorker()
         {
-            if (_asyncWorker != null)
-                _asyncWorker.Dispose();
+            _asyncWorker?.Dispose();
             _asyncException = null;
             _asyncWorker = null;
             _asyncCancelled = false;
@@ -417,29 +404,25 @@ namespace Starksoft.Net.Proxy
         /// <remarks>
         /// This method creates a connection to the proxy server and instructs the proxy server
         /// to make a pass through connection to the specified destination host on the specified
-        /// port.  
+        /// port. 
         /// </remarks>
-        public void CreateConnectionAsync(string destinationHost, int destinationPort)
+        public void CreateConnectionAsync(string destinationHost, ushort destinationPort)
         {
             if (_asyncWorker != null && _asyncWorker.IsBusy)
-                throw new InvalidOperationException("The HttpProxy object is already busy executing another asynchronous operation.  You can only execute one asychronous method at a time.");
-
+                throw new InvalidOperationException("The HttpProxy object is already busy executing another asynchronous operation. You can only execute one asychronous method at a time.");
             CreateAsyncWorker();
             _asyncWorker.WorkerSupportsCancellation = true;
             _asyncWorker.DoWork += new DoWorkEventHandler(CreateConnectionAsync_DoWork);
             _asyncWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(CreateConnectionAsync_RunWorkerCompleted);
-            Object[] args = new Object[2];
-            args[0] = destinationHost;
-            args[1] = destinationPort;
-            _asyncWorker.RunWorkerAsync(args);
+            _asyncWorker.RunWorkerAsync(new object[] { destinationHost, destinationPort });
         }
 
-        private void CreateConnectionAsync_DoWork(object sender, DoWorkEventArgs e)
+        void CreateConnectionAsync_DoWork(object sender, DoWorkEventArgs e)
         {
             try
             {
-                Object[] args = (Object[])e.Argument;
-                e.Result = CreateConnection((string)args[0], (int)args[1]);
+                object[] args = (object[])e.Argument;
+                e.Result = CreateConnection((string)args[0], (ushort)args[1]);
             }
             catch (Exception ex)
             {
@@ -447,15 +430,8 @@ namespace Starksoft.Net.Proxy
             }
         }
 
-        private void CreateConnectionAsync_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            if (CreateConnectionAsyncCompleted != null)
-                CreateConnectionAsyncCompleted(this, new CreateConnectionAsyncCompletedEventArgs(_asyncException, _asyncCancelled, (TcpClient)e.Result));
-        }
+        void CreateConnectionAsync_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e) => CreateConnectionAsyncCompleted?.Invoke(this, new CreateConnectionAsyncCompletedEventArgs(_asyncException, _asyncCancelled, (TcpClient)e.Result));
 
-
-
-#endregion
-
+        #endregion
     }
 }

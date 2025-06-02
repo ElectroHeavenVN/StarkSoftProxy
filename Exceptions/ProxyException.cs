@@ -30,48 +30,34 @@ namespace Starksoft.Net.Proxy
 {
 
     /// <summary>
-    /// This exception is thrown when a general, unexpected proxy error.   
+    /// This exception is thrown when a general, unexpected proxy error.  
     /// </summary>
-    [Serializable()]
+    [Serializable]
     public class ProxyException : Exception
     {
         /// <summary>
         /// Constructor.
         /// </summary>
-        public ProxyException()
-        {
-        }
+        public ProxyException() { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="message">Exception message text.</param>
-        public ProxyException(string message)
-            : base(message)
-        {
-        }
+        public ProxyException(string message) : base(message) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="message">Exception message text.</param>
         /// <param name="innerException">The inner exception object.</param>
-        public ProxyException(string message, Exception innerException)
-            :
-           base(message, innerException)
-        {
-        }
+        public ProxyException(string message, Exception innerException) : base(message, innerException) { }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="context">Stream context information.</param>
-        protected ProxyException(SerializationInfo info,
-           StreamingContext context)
-            : base(info, context)
-        {
-        }
+        protected ProxyException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
-
 }

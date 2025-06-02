@@ -24,14 +24,12 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Net.Sockets;
 
 namespace Starksoft.Net.Proxy
 {
     /// <summary>
-    /// Proxy client interface.  This is the interface that all proxy clients must implement.
+    /// Proxy client interface. This is the interface that all proxy clients must implement.
     /// </summary>
     public interface IProxyClient
     {
@@ -49,7 +47,7 @@ namespace Starksoft.Net.Proxy
         /// <summary>
         /// Gets or sets proxy port number.
         /// </summary>
-        int ProxyPort { get; set; }
+        ushort ProxyPort { get; set; }
 
         /// <summary>
         /// Gets String representing the name of the proxy.
@@ -59,7 +57,7 @@ namespace Starksoft.Net.Proxy
         /// <summary>
         /// Gets or set the TcpClient object if one was specified in the constructor.
         /// </summary>
-        TcpClient TcpClient { get; set; }
+        TcpClient Client { get; set; }
 
         /// <summary>
         /// Creates a remote TCP connection through a proxy server to the destination host on the destination port.
@@ -73,9 +71,9 @@ namespace Starksoft.Net.Proxy
         /// <remarks>
         /// This method creates a connection to the proxy server and instructs the proxy server
         /// to make a pass through connection to the specified destination host on the specified
-        /// port.  
+        /// port. 
         /// </remarks>
-        TcpClient CreateConnection(string destinationHost, int destinationPort);
+        TcpClient CreateConnection(string destinationHost, ushort destinationPort);
 
         /// <summary>
         /// Asynchronously creates a remote TCP connection through a proxy server to the destination host on the destination port.
@@ -89,9 +87,8 @@ namespace Starksoft.Net.Proxy
         /// <remarks>
         /// This method creates a connection to the proxy server and instructs the proxy server
         /// to make a pass through connection to the specified destination host on the specified
-        /// port.  
+        /// port.
         /// </remarks>
-        void CreateConnectionAsync(string destinationHost, int destinationPort);
-
+        void CreateConnectionAsync(string destinationHost, ushort destinationPort);
     }
 }
