@@ -38,7 +38,7 @@ namespace Starksoft.Net.Proxy
     /// </remarks>
     public class Socks4aProxyClient : Socks4ProxyClient
     {
-        const string PROXY_NAME = "SOCKS4a";
+        static readonly string PROXY_NAME = "SOCKS4a";
 
         /// <summary>
         /// Gets String representing the name of the proxy. 

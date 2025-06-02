@@ -41,42 +41,42 @@ namespace Starksoft.Net.Proxy
     /// </remarks>
     public class Socks4ProxyClient : IProxyClient
     {
-        const int WAIT_FOR_DATA_INTERVAL = 50;   // 50 ms
-        const int WAIT_FOR_DATA_TIMEOUT = 15000; // 15 seconds
-        const string PROXY_NAME = "SOCKS4";
+        static readonly int WAIT_FOR_DATA_INTERVAL = 50;   // 50 ms
+        static readonly int WAIT_FOR_DATA_TIMEOUT = 15000; // 15 seconds
+        static readonly string PROXY_NAME = "SOCKS4";
 
         /// <summary>
         /// Default Socks4 proxy port.
         /// </summary>
-        internal const ushort SOCKS_PROXY_DEFAULT_PORT = 1080;
+        internal static readonly ushort SOCKS_PROXY_DEFAULT_PORT = 1080;
         /// <summary>
         /// Socks4 version number.
         /// </summary>
-        internal const byte SOCKS4_VERSION_NUMBER = 4;
+        internal static readonly byte SOCKS4_VERSION_NUMBER = 4;
         /// <summary>
         /// Socks4 connection command value.
         /// </summary>
-        internal const byte SOCKS4_CMD_CONNECT = 0x01;
+        internal static readonly byte SOCKS4_CMD_CONNECT = 0x01;
         /// <summary>
         /// Socks4 bind command value.
         /// </summary>
-        internal const byte SOCKS4_CMD_BIND = 0x02;
+        internal static readonly byte SOCKS4_CMD_BIND = 0x02;
         /// <summary>
         /// Socks4 reply request grant response value.
         /// </summary>
-        internal const byte SOCKS4_CMD_REPLY_REQUEST_GRANTED = 90;
+        internal static readonly byte SOCKS4_CMD_REPLY_REQUEST_GRANTED = 90;
         /// <summary>
         /// Socks4 reply request rejected or failed response value.
         /// </summary>
-        internal const byte SOCKS4_CMD_REPLY_REQUEST_REJECTED_OR_FAILED = 91;
+        internal static readonly byte SOCKS4_CMD_REPLY_REQUEST_REJECTED_OR_FAILED = 91;
         /// <summary>
         /// Socks4 reply request rejected becauase the proxy server can not connect to the IDENTD server value.
         /// </summary>
-        internal const byte SOCKS4_CMD_REPLY_REQUEST_REJECTED_CANNOT_CONNECT_TO_IDENTD = 92;
+        internal static readonly byte SOCKS4_CMD_REPLY_REQUEST_REJECTED_CANNOT_CONNECT_TO_IDENTD = 92;
         /// <summary>
         /// Socks4 reply request rejected because of a different IDENTD server.
         /// </summary>
-        internal const byte SOCKS4_CMD_REPLY_REQUEST_REJECTED_DIFFERENT_IDENTD = 93;
+        internal static readonly byte SOCKS4_CMD_REPLY_REQUEST_REJECTED_DIFFERENT_IDENTD = 93;
 
         /// <summary>
         /// Gets String representing the name of the proxy. 

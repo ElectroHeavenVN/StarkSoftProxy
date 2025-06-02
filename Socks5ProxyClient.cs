@@ -43,34 +43,34 @@ namespace Starksoft.Net.Proxy
     {
         SocksAuthentication ProxyAuthMethod;
 
-        const string PROXY_NAME = "SOCKS5";
-        const int SOCKS5_DEFAULT_PORT = 1080;
+        static readonly string PROXY_NAME = "SOCKS5";
+        static readonly int SOCKS5_DEFAULT_PORT = 1080;
 
-        const byte SOCKS5_VERSION_NUMBER = 5;
-        const byte SOCKS5_RESERVED = 0x00;
-        const byte SOCKS5_AUTH_METHOD_NO_AUTHENTICATION_REQUIRED = 0x00;
-        const byte SOCKS5_AUTH_METHOD_GSSAPI = 0x01;
-        const byte SOCKS5_AUTH_METHOD_USERNAME_PASSWORD = 0x02;
-        const byte SOCKS5_AUTH_METHOD_IANA_ASSIGNED_RANGE_BEGIN = 0x03;
-        const byte SOCKS5_AUTH_METHOD_IANA_ASSIGNED_RANGE_END = 0x7f;
-        const byte SOCKS5_AUTH_METHOD_RESERVED_RANGE_BEGIN = 0x80;
-        const byte SOCKS5_AUTH_METHOD_RESERVED_RANGE_END = 0xfe;
-        const byte SOCKS5_AUTH_METHOD_REPLY_NO_ACCEPTABLE_METHODS = 0xff;
-        const byte SOCKS5_CMD_CONNECT = 0x01;
-        const byte SOCKS5_CMD_BIND = 0x02;
-        const byte SOCKS5_CMD_UDP_ASSOCIATE = 0x03;
-        const byte SOCKS5_CMD_REPLY_SUCCEEDED = 0x00;
-        const byte SOCKS5_CMD_REPLY_GENERAL_SOCKS_SERVER_FAILURE = 0x01;
-        const byte SOCKS5_CMD_REPLY_CONNECTION_NOT_ALLOWED_BY_RULESET = 0x02;
-        const byte SOCKS5_CMD_REPLY_NETWORK_UNREACHABLE = 0x03;
-        const byte SOCKS5_CMD_REPLY_HOST_UNREACHABLE = 0x04;
-        const byte SOCKS5_CMD_REPLY_CONNECTION_REFUSED = 0x05;
-        const byte SOCKS5_CMD_REPLY_TTL_EXPIRED = 0x06;
-        const byte SOCKS5_CMD_REPLY_COMMAND_NOT_SUPPORTED = 0x07;
-        const byte SOCKS5_CMD_REPLY_ADDRESS_TYPE_NOT_SUPPORTED = 0x08;
-        const byte SOCKS5_ADDRTYPE_IPV4 = 0x01;
-        const byte SOCKS5_ADDRTYPE_DOMAIN_NAME = 0x03;
-        const byte SOCKS5_ADDRTYPE_IPV6 = 0x04;
+        static readonly byte SOCKS5_VERSION_NUMBER = 5;
+        static readonly byte SOCKS5_RESERVED = 0x00;
+        static readonly byte SOCKS5_AUTH_METHOD_NO_AUTHENTICATION_REQUIRED = 0x00;
+        static readonly byte SOCKS5_AUTH_METHOD_GSSAPI = 0x01;
+        static readonly byte SOCKS5_AUTH_METHOD_USERNAME_PASSWORD = 0x02;
+        static readonly byte SOCKS5_AUTH_METHOD_IANA_ASSIGNED_RANGE_BEGIN = 0x03;
+        static readonly byte SOCKS5_AUTH_METHOD_IANA_ASSIGNED_RANGE_END = 0x7f;
+        static readonly byte SOCKS5_AUTH_METHOD_RESERVED_RANGE_BEGIN = 0x80;
+        static readonly byte SOCKS5_AUTH_METHOD_RESERVED_RANGE_END = 0xfe;
+        static readonly byte SOCKS5_AUTH_METHOD_REPLY_NO_ACCEPTABLE_METHODS = 0xff;
+        static readonly byte SOCKS5_CMD_CONNECT = 0x01;
+        static readonly byte SOCKS5_CMD_BIND = 0x02;
+        static readonly byte SOCKS5_CMD_UDP_ASSOCIATE = 0x03;
+        static readonly byte SOCKS5_CMD_REPLY_SUCCEEDED = 0x00;
+        static readonly byte SOCKS5_CMD_REPLY_GENERAL_SOCKS_SERVER_FAILURE = 0x01;
+        static readonly byte SOCKS5_CMD_REPLY_CONNECTION_NOT_ALLOWED_BY_RULESET = 0x02;
+        static readonly byte SOCKS5_CMD_REPLY_NETWORK_UNREACHABLE = 0x03;
+        static readonly byte SOCKS5_CMD_REPLY_HOST_UNREACHABLE = 0x04;
+        static readonly byte SOCKS5_CMD_REPLY_CONNECTION_REFUSED = 0x05;
+        static readonly byte SOCKS5_CMD_REPLY_TTL_EXPIRED = 0x06;
+        static readonly byte SOCKS5_CMD_REPLY_COMMAND_NOT_SUPPORTED = 0x07;
+        static readonly byte SOCKS5_CMD_REPLY_ADDRESS_TYPE_NOT_SUPPORTED = 0x08;
+        static readonly byte SOCKS5_ADDRTYPE_IPV4 = 0x01;
+        static readonly byte SOCKS5_ADDRTYPE_DOMAIN_NAME = 0x03;
+        static readonly byte SOCKS5_ADDRTYPE_IPV6 = 0x04;
 
         /// <summary>
         /// Authentication itemType.

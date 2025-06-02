@@ -49,11 +49,11 @@ namespace Starksoft.Net.Proxy
         HttpResponseCodes _respCode;
         string _respText;
 
-        const ushort HTTP_PROXY_DEFAULT_PORT = 8080;
-        const string HTTP_PROXY_CONNECT_CMD = "CONNECT {0}:{1} HTTP/1.1\r\nHost: {0}:{1}\r\n";
-        const int WAIT_FOR_DATA_INTERVAL = 50; // 50 ms
-        const int WAIT_FOR_DATA_TIMEOUT = 15000; // 15 seconds
-        const string PROXY_NAME = "HTTP";
+        static readonly ushort HTTP_PROXY_DEFAULT_PORT = 8080;
+        static readonly string HTTP_PROXY_CONNECT_CMD = "CONNECT {0}:{1} HTTP/1.1\r\nHost: {0}:{1}\r\n";
+        static readonly int WAIT_FOR_DATA_INTERVAL = 50; // 50 ms
+        static readonly int WAIT_FOR_DATA_TIMEOUT = 15000; // 15 seconds
+        static readonly string PROXY_NAME = "HTTP";
 
         enum HttpResponseCodes
         {
